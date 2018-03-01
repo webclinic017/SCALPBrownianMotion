@@ -58,7 +58,7 @@ def plotusdbtc(i,usdbtc, lsrsi, name):
     fig, ax = plt.subplots()
     tplub = np.arange(stochrsit, lsrsi+stochrsit-1)
     if i==1:
-        plt.plot( np.arange(stochrsit, stochrsit+len(np.delete(usdbtc,np.s_[0:3], axis=1))*dt,dt), np.delete(usdbtc,np.s_[0:3], axis=1))
+        plt.plot(np.arange(stochrsit, stochrsit+len(np.delete(usdbtc,np.s_[0:3], axis=1))*dt,dt), np.delete(usdbtc,np.s_[0:3], axis=1))
     else:
         plt.plot(np.arange(stochrsit, stochrsit+len(np.delete(usdbtc,np.s_[0:3], axis=1))*dt,dt), np.delete(np.delete(usdbtc,np.s_[0:2], axis=1), np.s_[3:4], axis=1))
     plt.savefig(name+'.png')
@@ -96,33 +96,31 @@ def stochrsib(srsi):
 def stochrsiarray(x, t, stochrsit):
     return np.delete([tuple([stochrsi(x, i, stochrsit)]) for i in range(stochrsit,len(t)+1)], 1, axis=0)
 
-"""le choix de treshold dépendra des risques de l'action : risque qu'on souhaite encourir (à voir si je définis ça par rapport à un gain min ou pas seulement) (si élevé alors en vente : treshold très important, on hold plus, en vente : treshold élevé, on hold plus, &inversement), à réfléchir si on all-in à chaque fois ou si l'on met en jeu abs(1-srsi)*capital"""
+"""le choix de treshold dépendra des risques de l'action : risque qu'on souhaite encourir (à voir si je définis ça par rapport à un gain min ou pas seulement) (si élevé alors en vente : treshold très important, on hold plus, en vente : treshold élevé, on hold plus, &inversement), à réfléchir si on all-in à chaque fois ou si l'on met en jeu f(srsi)*capital"""
 
-def ag1(stochrsit, t, x, USDBTC, srsib, srsi, dt):
+def ag1(stochrsit, t, x, USDBTC, srsib, srsi, dt, p):
     for i in range(stochrsit, len(srsi)+stochrsit-1):
         if USDBTC[i, 0] != 0 and srsib[i-stochrsit] == 0 :
-            USDBTC[i+1,0] = USDBTC[i, 0] + achat(x, i+1, pow((1-srsi[i-stochrsit]),1)*USDBTC[i,0])[0]
-            USDBTC[i+1,1] = USDBTC[i, 1] + achat(x, i+1, pow((1-srsi[i-stochrsit]),1)*USDBTC[i,0])[1]
+            USDBTC[i+1,0] = USDBTC[i, 0] + achat(x, i+1, pow((1-srsi[i-stochrsit]), p)*USDBTC[i,0])[0]
+            USDBTC[i+1,1] = USDBTC[i, 1] + achat(x, i+1, pow((1-srsi[i-stochrsit]), p)*USDBTC[i,0])[1]
             with open("run.txt", "a") as myfile:
-                myfile.write("USDBTC[][]B : " + str(USDBTC[i,0])+","+str(USDBTC[i,1])+ " -> "+ str(USDBTC[i+1,0])+","+str(USDBTC[i+1,1])+"*"+str(x[i+1]) + "\n")
+                myfile.write("USDBTC[][]B : " + str(USDBTC[i,0]) + "," + str(USDBTC[i,1]) + " -> " + str(USDBTC[i+1,0])+","+str(USDBTC[i+1,1]) + "*" + str(x[i+1]) + "\n")
         elif USDBTC[i, 1] != 0 and srsib[i-stochrsit] == 1:
-            USDBTC[i+1,0] = USDBTC[i,0] + vente(x, i+1, pow(srsi[i-stochrsit]*USDBTC[i,1],1))[0]
-            USDBTC[i+1,1] = USDBTC[i,1] + vente(x, i+1, pow(srsi[i-stochrsit]*USDBTC[i,1],1))[1]
+            USDBTC[i+1,0] = USDBTC[i,0] + vente(x, i+1, pow(srsi[i-stochrsit]*USDBTC[i, 1], p))[0]
+            USDBTC[i+1,1] = USDBTC[i,1] + vente(x, i+1, pow(srsi[i-stochrsit]*USDBTC[i, 1], p))[1]
             with open("run.txt", "a") as myfile:
-                myfile.write("USDBTC[][]S : " + str(USDBTC[i,0])+","+str(USDBTC[i,1])+ " -> "+str(USDBTC[i+1,0])+","+str(USDBTC[i+1,1])+"*"+str(x[i+1])+ "\n")
+                myfile.write("USDBTC[][]S : " + str(USDBTC[i, 0]) + "," + str(USDBTC[i, 1]) + " -> " + str(USDBTC[i+1,0]) + "," + str(USDBTC[i+1,1]) + "*" + str(x[i+1])+ "\n")
         else :
-            USDBTC[i+1,0] = USDBTC[i,0]
-            USDBTC[i+1,1] = USDBTC[i,1]
+            USDBTC[i+1, 0] = USDBTC[i, 0]
+            USDBTC[i+1, 1] = USDBTC[i, 1]
             with open("run.txt", "a") as myfile:
-                myfile.write("USDBTC[][]K : " + str(USDBTC[i,0])+","+str(USDBTC[i,1])+ " -> "+str(USDBTC[i+1,0])+","+str(USDBTC[i+1,1])+"*"+str(x[i+1])+"\n")
-        USDBTC[i,2] = USDBTC[i,0]+x[i]*USDBTC[i,1]
-        USDBTC[i,3] = USDBTC[i,0]/x[i]+USDBTC[i,1]
+                myfile.write("USDBTC[][]K : " + str(USDBTC[i, 0]) + "," + str(USDBTC[i, 1])+ " -> " + str(USDBTC[i+1,0]) + "," + str(USDBTC[i+1,1])+"*"+str(x[i+1])+"\n")
+        USDBTC[i, 2] = USDBTC[i, 0]+x[i]*USDBTC[i, 1]
+        USDBTC[i, 3] = USDBTC[i, 0]/x[i]+USDBTC[i, 1]
     return USDBTC
 
 
-"""for i in range(stochrsit, len(t)-stochrsit-1):
-    print(str(USDBTC[i,0])+'   '+str(USDBTC[i,1]))"""
-def run(x, N, dt, delta, dxL, volatility, dxH, t, i, USDBTC):
+def run(x, N, dt, delta, dxL, volatility, dxH, t, i, USDBTC, p):
     brownian(x[0], N, dt, delta, out=x[1:])
     brownian(dxL[0], N, dt, volatility, out=dxL[1:])
     brownian(dxH[0], N, dt, volatility, out=dxH[1:])
@@ -131,8 +129,9 @@ def run(x, N, dt, delta, dxL, volatility, dxH, t, i, USDBTC):
     srsib = stochrsib(srsi)
     plotsrsibin(t, srsib, stochrsit, 'plotsrsibin'+str(i))
     plotsrsi(t, srsi, stochrsit, 'plotsrsi'+str(i))
-    USDBTC = ag1(stochrsit, t, x, USDBTC, srsib, srsi, dt)
+    USDBTC = ag1(stochrsit, t, x, USDBTC, srsib, srsi, dt, p)
     plotusdbtc(1, USDBTC, len(srsi), 'plotusdbtc1'+str(i))
     plotusdbtc(0, USDBTC, len(srsi), 'plotusdbtc0'+str(i))
+
 for i in range(0, 1):
-    run(x, N, dt, delta, dxL, volatility, dxH, t, i, USDBTC)
+    run(x, N, dt, delta, dxL, volatility, dxH, t, i, USDBTC, 1)
