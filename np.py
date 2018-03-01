@@ -13,8 +13,8 @@ import datetime
 #T:         time period
 #dt:        time step
 #delta:     "speed" of the Brownian motion, variance = delta**2t
-N = 2400
-T = 800
+N = 150
+T = 75
 dt = T/N
 delta = .1
 delta2 = .05
@@ -66,8 +66,8 @@ def GBM(x0, mu, sigma, x, T, N):
 #
 #x:         numpy array, prices (brownian, GBM, real datas)
 #i:         stochrsi() computes the stochrsi of x at i
-#stochrsit: stochrsi based on the last stochrsit prices
-stochrsit = 100
+#stochrsit: stochrsi based on the last stochrsit prices, condition : stochrsit=n*dt, where n is a natural number and stochrsit is a natural number
+stochrsit = 20
 portfolio[stochrsit,1] = 0 #initial condition (qty of money 1)
 for i in range(0, stochrsit+1) :
     portfolio[i,0] = 100 #initial condition (qty of money 0)
@@ -124,6 +124,8 @@ def plotsrsi(t, srsi, stochrsit, name):
 def plotportfolio(i, portfolio, lsrsi, name, x):
     fig, ax = plt.subplots()
     tplub = np.arange(stochrsit, lsrsi+stochrsit)
+    for v in range(len(tplub)):
+        tplub[v] = tplub[v]/dt
     if i==1:
         p = np.delete([tuple([portfolio[i, 0]+x[i]*portfolio[i, 1]]) for i in range((len(tplub)+1))], 1, axis=0)
         plt.plot(tplub, p)
@@ -193,9 +195,9 @@ def run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, p):
     portfolio2 = method1(stochrsit, t, xgbm, portfolio, srsib, srsi, dt, p)
     plotportfolio(1, portfolio2, len(srsi), 'plotportfolio1gb'+str(i), x)
     plotportfolio(0, portfolio2, len(srsi), 'plotportfolio0gb'+str(i), x)
-    expava = ExpAv(0.1, x[0], x)
+    expava = ExpAv(0.0125, x[0], x)
     plotexpav(t, expava, 'plotexpavb'+str(i))
-    expavag = ExpAv(0.1, xgbm[1], xgbm)
+    expavag = ExpAv(0.0125, xgbm[1], xgbm)
     plotexpav(t, expavag, 'plotexpavgb'+str(i))
 for i in range(0, 1):
     run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, 1)
