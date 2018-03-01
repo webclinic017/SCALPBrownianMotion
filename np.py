@@ -13,8 +13,8 @@ import datetime
 #T:         time period
 #dt:        time step
 #delta:     "speed" of the Brownian motion, variance = delta**2t
-N = 500
-T = 400
+N = 2400
+T = 800
 dt = T/N
 delta = .1
 delta2 = .05
@@ -49,7 +49,6 @@ def brownianu(s, N):
 #sigma:     volatility coefficient
 #x:         brownian motion calculated by brownian()
 #t:         np array, 0, dt, 2dt, ..., T
-
 mu = 0.05
 sigma = 0.04
 
@@ -68,8 +67,7 @@ def GBM(x0, mu, sigma, x, T, N):
 #x:         numpy array, prices (brownian, GBM, real datas)
 #i:         stochrsi() computes the stochrsi of x at i
 #stochrsit: stochrsi based on the last stochrsit prices
-
-stochrsit = 15
+stochrsit = 100
 portfolio[stochrsit,1] = 0 #initial condition (qty of money 1)
 for i in range(0, stochrsit+1) :
     portfolio[i,0] = 100 #initial condition (qty of money 0)
@@ -85,19 +83,37 @@ def stochrsi(x, i, stochrsit):
 #srsi:  numpy array of the values calculated by stochrsi()
 def stochrsib(srsi):
     for i in range(0, len(srsi)):
-        if(srsi[i]<0.1): #treshold
+        if(srsi[i]<0.5): #treshold
             srsifiltered[i] = 0
-        elif(srsi[i]>0.7): #treshold
+        elif(srsi[i]>=0.7): #treshold
             srsifiltered[i] = 1
         else:
             srsifiltered[i]=srsi[i]
     return srsifiltered
+
+#Parameters ExpAv()
+#
+#alpha:     smoothing constant
+#x0:        initial condition
+#x:         set of datas
+expava = np.empty((N))
+
+def ExpAv(alpha, x0, x):
+    expava[0] = x0
+    for i in range(1,len(x)):
+        expava[i] = alpha*x[i] + (1-alpha)*expava[i-1]
+    return np.delete(expava, 1, axis = 0)
 
 def buy(x, t, q):
     return [-q],[q/x[t]]
 
 def sell(x, t, q):
     return [q*x[t]],[-q]
+
+def plotexpav(t, expava, name):
+    fig, ax = plt.subplots()
+    plt.plot(t, expava)
+    plt.savefig(name+'.png')
 
 def plotsrsi(t, srsi, stochrsit, name):
     fig, ax = plt.subplots()
@@ -177,5 +193,10 @@ def run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, p):
     portfolio2 = method1(stochrsit, t, xgbm, portfolio, srsib, srsi, dt, p)
     plotportfolio(1, portfolio2, len(srsi), 'plotportfolio1gb'+str(i), x)
     plotportfolio(0, portfolio2, len(srsi), 'plotportfolio0gb'+str(i), x)
+    expava = ExpAv(0.1, x[0], x)
+    plotexpav(t, expava, 'plotexpavb'+str(i))
+    t = np.arange(dt, T, dt)
+    expavag = ExpAv(0.1, x[0], xgbm)
+    plotexpav(t, expavag, 'plotexpavgb'+str(i))
 for i in range(0, 1):
     run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, 1)
