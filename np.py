@@ -27,7 +27,7 @@ USDBTC[stochrsit,1] = 0
 USDBTC[stochrsit,0] = 100
 srsibin = np.empty((N-stochrsit))
 
-def brownien(x0, n, dt, delta, out=None):
+def brownian(x0, n, dt, delta, out=None):
     x0 = np.asarray(x0)
     r = norm.rvs(size=x0.shape + (n,), scale=delta*sqrt(dt))
     if out is None:
@@ -68,7 +68,7 @@ def plotsrsibin(t, srsibin, stochrsit, name):
     plt.plot(np.arange(stochrsit*dt, T, dt), srsibin)
     plt.savefig(name+'.png')
 
-def plotbrownien(x, dxH, dxL, dt, t, name):
+def plotbrownian(x, dxH, dxL, dt, t, name):
     dxL = -abs(dxL)
     dxH = abs(dxH)
     for i in range(len(t)+1):
@@ -123,10 +123,10 @@ def ag1(stochrsit, t, x, USDBTC, srsib, srsi, dt):
 """for i in range(stochrsit, len(t)-stochrsit-1):
     print(str(USDBTC[i,0])+'   '+str(USDBTC[i,1]))"""
 def run(x, N, dt, delta, dxL, volatility, dxH, t, i, USDBTC):
-    brownien(x[0], N, dt, delta, out=x[1:])
-    brownien(dxL[0], N, dt, volatility, out=dxL[1:])
-    brownien(dxH[0], N, dt, volatility, out=dxH[1:])
-    plotbrownien(x, dxH*0, dxL*0, dt, t, 'plotb'+str(i))
+    brownian(x[0], N, dt, delta, out=x[1:])
+    brownian(dxL[0], N, dt, volatility, out=dxL[1:])
+    brownian(dxH[0], N, dt, volatility, out=dxH[1:])
+    plotbrownian(x, dxH*0, dxL*0, dt, t, 'plotb'+str(i))
     srsi = stochrsiarray(x, t, stochrsit)
     srsib = stochrsib(srsi)
     plotsrsibin(t, srsib, stochrsit, 'plotsrsibin'+str(i))
