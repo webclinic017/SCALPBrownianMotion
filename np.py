@@ -96,7 +96,7 @@ def stochrsib(srsi):
 #alpha:     smoothing constant
 #x0:        initial condition
 #x:         set of datas
-expava = np.empty((N))
+expava = np.empty((N+1))
 
 def ExpAv(alpha, x0, x):
     expava[0] = x0
@@ -195,8 +195,7 @@ def run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, p):
     plotportfolio(0, portfolio2, len(srsi), 'plotportfolio0gb'+str(i), x)
     expava = ExpAv(0.1, x[0], x)
     plotexpav(t, expava, 'plotexpavb'+str(i))
-    t = np.arange(dt, T, dt)
-    expavag = ExpAv(0.1, x[0], xgbm)
+    expavag = ExpAv(0.1, xgbm[1], xgbm)
     plotexpav(t, expavag, 'plotexpavgb'+str(i))
 for i in range(0, 1):
     run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, 1)
