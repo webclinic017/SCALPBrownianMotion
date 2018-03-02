@@ -6,6 +6,8 @@ from math import floor
 from matplotlib.finance import candlestick_ohlc
 import datetime
 
+plt.rc('text', usetex=True)
+
 #Parameters brownian()
 #
 #x[0]:      X(0), initial stock price
@@ -104,19 +106,40 @@ def ExpAv(alpha, x0, x):
         expava[i] = alpha*x[i] + (1-alpha)*expava[i-1]
     return np.delete(expava, 1, axis = 0)
 
+#Parameters ArAv()
+#
+#n         ArAv() will calculate the arithmetic average on the last n values of x (for i in range(len(x)))
+#x:         set of datas
+
+def ArAv(x, n, dt):
+    arava = np.empty((N-n))
+    t = np.arange(n*dt, T, dt)
+    for j in range(0, len(x)-1-n):
+        arava[j] = arava[j-1] + (x[j]-x[j-n])/n
+    return t, arava
+
 def buy(x, t, q):
     return [-q],[q/x[t]]
 
 def sell(x, t, q):
     return [q*x[t]],[-q]
 
-def plotexpav(t, expava, name):
+def plotkav(t, k, name, i):
     fig, ax = plt.subplots()
-    plt.plot(t, expava)
+    plt.plot(t, k)
+    plt.xlabel(r'\textbf{time} ($t = k\Delta t$)')
+    if i == 0:
+        plt.title(r"EMA$(B(t)) =  \alpha B(t)+(1-\alpha) $EMA$({B(t-\Delta t)})$",
+        fontsize=16, color='black')
+    elif i == 1:
+        plt.title(r"SMA$(B(t)) = $ SMA$(B(t-\Delta t))+\frac{B(t)-B(t-n)}{n}$",
+        fontsize=16, color='black')
     plt.savefig(name+'.png')
 
 def plotsrsi(t, srsi, stochrsit, name):
     fig, ax = plt.subplots()
+    plt.xlabel(r'\textbf{time} ($t = k\Delta t$)')
+    plt.title(r"StochRSI$(t, \tau)$")
     srsi = np.delete([tuple([stochrsi(x, i, stochrsit)]) for i in range(stochrsit,len(t)+1)], 1, axis=0)
     plt.plot(np.arange(stochrsit*dt, T, dt), srsi)
     plt.savefig(name+'.png')
@@ -124,19 +147,24 @@ def plotsrsi(t, srsi, stochrsit, name):
 def plotportfolio(i, portfolio, lsrsi, name, x):
     fig, ax = plt.subplots()
     tplub = np.arange(stochrsit, lsrsi+stochrsit)
+    plt.xlabel(r'\textbf{time} ($t = k\Delta t$)')
     for v in range(len(tplub)):
         tplub[v] = tplub[v]/dt
     if i==1:
         p = np.delete([tuple([portfolio[i, 0]+x[i]*portfolio[i, 1]]) for i in range((len(tplub)+1))], 1, axis=0)
+        plt.title(r'Portfolio(t, 0)')
         plt.plot(tplub, p)
     else:
         p = np.delete([tuple([portfolio[i, 0]/x[i]+portfolio[i, 1]]) for i in range((len(tplub)+1))], 1, axis=0)
         plt.plot(tplub, p)
+        plt.title(r'Portfolio(t, 1)')
     plt.savefig(name+'.png')
 
 def plotsrsifiltered(t, srsifiltered, stochrsit, name):
     fig, ax = plt.subplots()
     plt.plot(np.arange(stochrsit*dt, T, dt), srsifiltered)
+    plt.xlabel(r'\textbf{time} ($t = k\Delta t$)')
+    plt.title(r'FilteredStochRSI($\alpha$,$\beta$,$t$,$\tau$)')
     plt.savefig(name+'.png')
 
 def plotbrownian(x, dxH, dxL, dt, t, name, b):
@@ -151,7 +179,12 @@ def plotbrownian(x, dxH, dxL, dt, t, name, b):
                      x[i+1]+dxL[i+1],
                      x[i+1]]) for i in range(b,len(x)-1)]
     fig, ax = plt.subplots()
+    plt.xlabel(r'\textbf{time} ($t = k\Delta t$)')
     candlestick_ohlc(ax, quotes, width=dt, colorup='g', colordown='r', alpha=1.0)
+    if b == 1:
+        plt.title(r'$B_g(t, \sigma, \mu, W)$')
+    else:
+        plt.title(r'$B(t, \delta)$')
     plt.savefig(name + '.png')
 
 def stochrsiarray(x, t, stochrsit):
@@ -196,8 +229,12 @@ def run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, p):
     plotportfolio(1, portfolio2, len(srsi), 'plotportfolio1gb'+str(i), x)
     plotportfolio(0, portfolio2, len(srsi), 'plotportfolio0gb'+str(i), x)
     expava = ExpAv(0.0125, x[0], x)
-    plotexpav(t, expava, 'plotexpavb'+str(i))
     expavag = ExpAv(0.0125, xgbm[1], xgbm)
-    plotexpav(t, expavag, 'plotexpavgb'+str(i))
+    plotkav(t, expavag, 'plotexpavgb'+str(i), 0)
+    plotkav(t, expava, 'plotexpavb'+str(i), 0)
+    arava = ArAv(x, 12, dt)
+    plotkav(arava[0], arava[1], 'plotaravab'+str(i), 1)
+    aravag = ArAv(xgbm, 12, dt)
+    plotkav(aravag[0], aravag[1], 'plotaravabg'+str(i), 1)
 for i in range(0, 1):
     run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, 1)
