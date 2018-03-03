@@ -15,8 +15,8 @@ plt.rc('text', usetex=True)
 #T:         time period
 #dt:        time step
 #delta:     "speed" of the Brownian motion, variance = delta**2t
-N = 150
-T = 75
+N = 600
+T = 300
 dt = T/N
 delta = .1
 delta2 = .05
@@ -29,7 +29,7 @@ x[0] = 10
 xL[0] = 0.0
 xH[0] = xL[0]
 t = np.arange(0, T, dt)
-portfolio = np.zeros(shape=(N,2))
+portfolio = np.zeros(shape=(N+1,3))
 
 def brownian(x0, n, dt, delta, out=None):
     x0 = np.asarray(x0)
@@ -69,7 +69,7 @@ def GBM(x0, mu, sigma, x, T, N):
 #x:         numpy array, prices (brownian, GBM, real datas)
 #i:         stochrsi() computes the stochrsi of x at i
 #stochrsit: stochrsi based on the last stochrsit prices, condition : stochrsit=n*dt, where n is a natural number and stochrsit is a natural number
-stochrsit = 20
+stochrsit = 120
 portfolio[stochrsit,1] = 0 #initial condition (qty of money 1)
 for i in range(0, stochrsit+1) :
     portfolio[i,0] = 100 #initial condition (qty of money 0)
@@ -87,6 +87,7 @@ def stochrsi(x, i, stochrsit):
 #beta:  treshold for the selling point
 alpha = 0.5
 beta = 0.5
+
 def stochrsib(srsi, alpha, beta):
     for i in range(0, len(srsi)):
         if(srsi[i]<alpha): #treshold
@@ -97,28 +98,28 @@ def stochrsib(srsi, alpha, beta):
             srsifiltered[i]=srsi[i]
     return srsifiltered
 
-#Parameters ExpAv()
+#Parameters EMA()
 #
 #alpha:     smoothing constant
 #x0:        initial condition
 #x:         set of datas
 expava = np.empty((N+1))
 
-def ExpAv(alpha, x0, x):
+def EMA(alpha, x0, x):
     expava[0] = x0
     for i in range(1,len(x)):
         expava[i] = alpha*x[i] + (1-alpha)*expava[i-1]
     return np.delete(expava, 1, axis = 0)
 
-#Parameters ArAv()
+#Parameters SMA()
 #
-#n          ArAv() will calculate the arithmetic average on the last n values of x (for i in range(len(x)))
+#n          SMA() will calculate the arithmetic average on the last n values of x (for i in range(len(x)))
 #x:         set of datas
 
-def ArAv(x, n, dt):
+def SMA(x, n, dt):
     arava = np.empty((N-n))
     t = np.arange(n*dt, T, dt)
-    for j in range(0, len(x)-1-n):
+    for j in range(1, len(arava)):
         arava[j] = arava[j-1] + (x[j]-x[j-n])/n
     return t, arava
 
@@ -138,6 +139,9 @@ def plotkav(t, k, name, i):
     elif i == 1:
         plt.title(r"SMA$(B(t)) = $ SMA$(B(t-\Delta t))+\frac{B(t)-B(t-n)}{n}$",
         fontsize=16, color='black')
+    elif i == 2:
+        plt.title(r"SA$(B(t)) =  \frac{1}{t}\mathrm{SA}(B(t-\Delta t))*(t-\Delta)+B(t))$",
+        fontsize=16, color='black')
     plt.savefig(name+'.png')
 
 def plotsrsi(t, srsi, stochrsit, name):
@@ -148,25 +152,32 @@ def plotsrsi(t, srsi, stochrsit, name):
     plt.plot(np.arange(stochrsit*dt, T, dt), srsi)
     plt.savefig(name+'.png')
 
-def plotportfolio(i, portfolio, lsrsi, name, x):
+def plotportfoliog(i, portfolio, lsrsi, name, x):
     fig, ax = plt.subplots()
     tplub = np.arange(stochrsit, lsrsi+stochrsit)
     plt.xlabel(r'\textbf{time} ($k = \frac{t}{\Delta t}$)')
-    for v in range(len(tplub)):
-        tplub[v] = tplub[v]/dt
     if i==1:
+        plt.title(r'EQPortfolio(t, 0)')
+    elif i==0:
+        plt.title(r'EQPortfolio(t, 1)')
+    elif i==2:
         plt.title(r'Portfolio(t, 0)')
-    else:
+    elif i==3:
         plt.title(r'Portfolio(t, 1)')
-    p = np.delete([tuple([portfoliogain(i, j, portfolio, x)]) for j in range((len(tplub)+1))], 1, axis=0)
-    plt.plot(tplub, p)
+    p = np.delete([tuple([portfoliogain(i, j, portfolio, x)]) for j in range(((portfolio.shape[0])))], 1, axis=0)
+    print(p)
+    plt.plot(range(portfolio.shape[0]-1), p)
     plt.savefig(name+'.png')
 
 def portfoliogain(i, j, portfolio, x):
     if i == 1:
-        return portfolio[j, 0] + x[j]*portfolio[j, 1]
+        return portfolio[j, 0] + portfolio[j, 2]*portfolio[j, 1]
     elif i == 0:
-        return portfolio[j, 0]/x[j] + portfolio[j, 1]
+        return portfolio[j, 0]/portfolio[j, 2] + portfolio[j, 1]
+    elif i == 2:
+        return portfolio[j, 0]
+    elif i == 3:
+        return portfolio[j ,1]
 
 def plotsrsifiltered(t, srsifiltered, stochrsit, name):
     fig, ax = plt.subplots()
@@ -202,32 +213,33 @@ def stochrsiarray(x, t, stochrsit):
 #Parameters method1()
 #
 #C:         treshold to sell and continue the process, C should depend on indicators at each time (tip : if you don't want to use it, make C = portfolio[0, 0]+1 for example)
-C = 1.05
+C = 1.01
 
-def method1(stochrsit, t, x, portfolio, srsib, srsi, dt, p, C):
-    for i in range(stochrsit, len(srsi)+stochrsit-1):
-        print(portfoliogain(1, i, portfolio, x))
+def method1(stochrsit, t, x, portfolio, srsib, srsi, dt, p, C, expava, arava):
+    for i in range(stochrsit, len(srsi)+stochrsit):
+        portfolio[i, 2] = x[i]
         if portfoliogain(1, i, portfolio, x) < C*portfolio[0, 0]:
-            if portfolio[i, 0] != 0 and srsib[i-stochrsit] == 0:
+            if portfolio[i, 0] > 0 and (srsib[i-stochrsit] == 0):
                 portfolio[i+1,0] = portfolio[i, 0] + buy(x, i+1, (1-srsi[i-stochrsit])**p*portfolio[i,0])[0]
                 portfolio[i+1,1] = portfolio[i, 1] + buy(x, i+1, (1-srsi[i-stochrsit])**p*portfolio[i,0])[1]
                 with open("run.txt", "a") as myfile:
-                    myfile.write("portfolio[][]B : " + str(portfolio[i,0]) + "," + str(portfolio[i,1]) + " -> " + str(portfolio[i+1,0])+","+str(portfolio[i+1,1]) + "*" + str(x[i+1]) + "\n")
-            elif portfolio[i, 1] != 0 and srsib[i-stochrsit] == 1:
+                    myfile.write("B("+str(i)+") : " + str(portfolio[i,0]) + ", " + str(portfolio[i,1]) + " -> " + str(portfolio[i+1,0])+", "+str(portfolio[i+1,1]) + "*" + str(x[i+1]) + "\n")
+            elif portfolio[i, 1] > 0 and (srsib[i-stochrsit] == 1):
                 portfolio[i+1,0] = portfolio[i,0] + sell(x, i+1, (srsi[i-stochrsit]*portfolio[i, 1])**p)[0]
                 portfolio[i+1,1] = portfolio[i,1] + sell(x, i+1, (srsi[i-stochrsit]*portfolio[i, 1])**p)[1]
                 with open("run.txt", "a") as myfile:
-                    myfile.write("portfolio[][]S : " + str(portfolio[i, 0]) + "," + str(portfolio[i, 1]) + " -> " + str(portfolio[i+1,0]) + "," + str(portfolio[i+1,1]) + "*" + str(x[i+1])+ "\n")
+                    myfile.write("S("+str(i)+") : " + str(portfolio[i, 0]) + ", " + str(portfolio[i, 1]) + " -> " + str(portfolio[i+1,0]) + ", " + str(portfolio[i+1,1]) + "*" + str(x[i+1])+ "\n")
             else:
                 portfolio[i+1, 0] = portfolio[i, 0]
                 portfolio[i+1, 1] = portfolio[i, 1]
                 with open("run.txt", "a") as myfile:
-                    myfile.write("portfolio[][]K : " + str(portfolio[i, 0]) + "," + str(portfolio[i, 1])+ " -> " + str(portfolio[i+1,0]) + "," + str(portfolio[i+1,1])+"*"+str(x[i+1])+"\n")
+                    myfile.write("K("+str(i)+") : " + str(portfolio[i, 0]) + ", " + str(portfolio[i, 1])+ " -> " + str(portfolio[i+1,0]) + ", " + str(portfolio[i+1,1])+"*"+str(x[i+1])+"\n")
         else:
             portfolio[i+1, 0] = portfolio[i, 0] + sell(x, i+1, portfolio[i, 1])[0]
             portfolio[i+1, 1] = portfolio[i, 1] + sell(x, i+1, portfolio[i, 1])[1]
             i = len(srsi)+stochrsit
             C += 0.01
+        portfolio[len(srsi)+stochrsit,2]=x[len(srsi)+stochrsit]
     return portfolio
 
 def run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, p, alpha, beta, C):
@@ -239,21 +251,25 @@ def run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, p, alpha, beta, C):
     plotbrownian(xgbm, dxH*0, dxL*0, dt, t, 'plotgbm'+str(i), 1)
     srsi = stochrsiarray(x, t, stochrsit)
     srsib = stochrsib(srsi, alpha, beta)
-    plotsrsifiltered(t, srsib, stochrsit, 'plotsrsifiltered'+str(i))
-    plotsrsi(t, srsi, stochrsit, 'plotsrsi'+str(i))
-    portfolio = method1(stochrsit, t, x, portfolio, srsib, srsi, dt, p, C)
-    plotportfolio(1, portfolio, len(srsi), 'plotportfolio1b'+str(i), x)
-    plotportfolio(0, portfolio, len(srsi), 'plotportfolio0b'+str(i), x)
-    portfolio2 = method1(stochrsit, t, xgbm, portfolio, srsib, srsi, dt, p, C)
-    plotportfolio(1, portfolio2, len(srsi), 'plotportfolio1gb'+str(i), x)
-    plotportfolio(0, portfolio2, len(srsi), 'plotportfolio0gb'+str(i), x)
-    expava = ExpAv(0.0125, x[0], x)
-    expavag = ExpAv(0.0125, xgbm[1], xgbm)
+    srsig = stochrsiarray(xgbm, t, stochrsit)
+    srsigb = stochrsib(srsi, alpha, beta)
+    expava = EMA(0.5, x[0], x)
+    expavag = EMA(0.5, xgbm[1], xgbm)
     plotkav(t, expavag, 'plotexpavgb'+str(i), 0)
     plotkav(t, expava, 'plotexpavb'+str(i), 0)
-    arava = ArAv(x, 12, dt)
+    arava = SMA(x, 10, dt)
     plotkav(arava[0], arava[1], 'plotaravab'+str(i), 1)
-    aravag = ArAv(xgbm, 12, dt)
+    aravag = SMA(xgbm, 10, dt)
     plotkav(aravag[0], aravag[1], 'plotaravabg'+str(i), 1)
+    plotsrsifiltered(t, srsigb, stochrsit, 'plotsrsigfiltered'+str(i))
+    plotsrsi(t, srsig, stochrsit, 'plotsrsig'+str(i))
+    plotsrsifiltered(t, srsib, stochrsit, 'plotsrsifiltered'+str(i))
+    plotsrsi(t, srsi, stochrsit, 'plotsrsi'+str(i))
+    portfolio = method1(stochrsit, t, x, portfolio, srsib, srsi, dt, p, C, expava, arava)
+    """plotportfoliog(0, portfolio, len(srsi), 'plotportfolio1b'+str(i), x)"""
+    plotportfoliog(1, portfolio, len(srsi), 'plotportfolio0b'+str(i), x)
+    portfolio2 = method1(stochrsit, t, xgbm, portfolio, srsigb, srsig, dt, p, C, expavag, aravag)
+    """plotportfoliog(0, portfolio2, len(srsi), 'plotportfolio1gb'+str(i), x)"""
+    plotportfoliog(1, portfolio2, len(srsi), 'plotportfolio0gb'+str(i), x)
 for i in range(0, 1):
     run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, 1, alpha, beta, C)
