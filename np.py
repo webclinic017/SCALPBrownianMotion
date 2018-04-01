@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
@@ -16,16 +17,17 @@ plt.rc('text', usetex=True)
 #T:         time period
 #dt:        time step
 #delta:     "speed" of the Brownian motion, variance = delta**2t
-N = 450
+N = 900
 T = 150
 dt = T/N
-delta = .1
+delta = .01
 delta2 = .05
 x = np.empty((N+1))
 xL = np.empty((N+1))
 xH = np.empty((N+1))
 dxL = np.empty((N+1))
 dxH = np.empty((N+1))
+buya = np.empty((N+1))
 x[0] = 10
 xL[0] = 0.0
 xH[0] = xL[0]
@@ -53,7 +55,7 @@ def brownianu(s, N):
 #x:         brownian motion calculated by brownian()
 #t:         np array, 0, dt, 2dt, ..., T
 mu = 0.05
-sigma = 0.04
+sigma = 0.2
 
 def GBM(x0, mu, sigma, x, T, N):
     t = np.linspace(0., 1., N+1)
@@ -70,7 +72,7 @@ def GBM(x0, mu, sigma, x, T, N):
 #x:         numpy array, prices (brownian, GBM, real datas)
 #i:         stochrsi() computes the stochrsi of x at i
 #stochrsit: stochrsi based on the last stochrsit prices, condition : stochrsit=n*dt, where n is a natural number and stochrsit is a natural number
-stochrsit = 3
+stochrsit = 20
 portfolio[stochrsit,1] = 0 #initial condition (qty of money 1)
 for i in range(0, stochrsit+1) :
     portfolio[i,0] = 1000 #initial condition (qty of money 0)
@@ -85,9 +87,9 @@ def stochrsi(x, i, stochrsit):
 #
 #srsi:  numpy array of the values calculated by stochrsi()
 #alpha: treshold for the buying point
-#beta:  treshold for the selling point
-alpha = 0.3
-beta = 0.7
+#beta:  treshold for the selling point, |0.5-c|=alpha, -|0.5-c|=beta
+alpha = 0.05
+beta = 0.95
 
 def stochrsib(srsi, alpha, beta):
     for i in range(0, len(srsi)):
@@ -211,26 +213,33 @@ def stochrsiarray(x, t, stochrsit):
 
 #Parameters method1()
 #
-#C:         treshold to sell and continue the process, C should depend on indicators at each time (tip : if you don't want to use it, make C too big)
+#C:         treshold to sell and continue the process, C should depend on indicators at each time (tip : if you don't want to use it, make C large)
 C = 1.1
 
-def method1(stochrsit, t, x, portfolio, srsib, srsi, dt, C, expava, arava, name, sl, sg):
+def method1(stochrsit, t, x, portfolio, srsib, srsi, dt, C, expava, arava, name, sl, cd):
     for i in range(stochrsit, len(srsi)+stochrsit):
         portfolio[i, 2] = x[i]
         if portfoliogain(1, i, portfolio, x) < C*portfolio[0, 0]:
-            if portfolio[i, 0] > 0 and srsib[i-stochrsit] == 0:
+            if portfolio[i, 0] > 0 and srsib[i-stochrsit] == 0 and expava[i]<expava[i-1]:
+                if(buy(x, i+1, (1-srsib[i-stochrsit])*portfolio[i,0])[1] > [0.0]):
+                    print("B " + str(buy(x, i+1, (1-srsib[i-stochrsit])*portfolio[i,0])[1]) + " F " + str(buy(x, i+1, (1-srsib[i-stochrsit])*portfolio[i,0])[0]) + " AT " + str(x[i+1]))
                 portfolio[i+1,0] = portfolio[i, 0] + buy(x, i+1, (1-srsib[i-stochrsit])*portfolio[i,0])[0]
                 portfolio[i+1,1] = portfolio[i, 1] + buy(x, i+1, (1-srsib[i-stochrsit])*portfolio[i,0])[1]
+                buya[i] = x[i]
                 with open(name+".txt", "a") as myfile:
                     myfile.write("B("+str(i)+") : " + str(portfolio[i,0]) + ", " + str(portfolio[i,1]) + " -> " + str(portfolio[i+1,0])+", "+str(portfolio[i+1,1]) + "*" + str(x[i+1]) + "\n")
-            elif portfolio[i, 1] > 0 and (srsib[i-stochrsit] == 1 and (x[i]*portfolio[i-1,1]+portfolio[i-1,0])>sg*(x[i-1]*portfoliogain(1, i-1, portfolio, x)) or (x[i]*portfolio[i-1,1]+portfolio[i-1,0])<sl*portfoliogain(1, i-1, portfolio, x)):
+            elif portfolio[i, 1] > 0 and x[i]>cd*buya[i-1] and srsib[i-stochrsit] == 1 and (x[i]*portfolio[i-1,1]+portfolio[i-1,0])<sl*portfoliogain(1, i-1, portfolio, x):
+                if(sell(x, i+1, (srsib[i-stochrsit])*portfolio[i,1])[0] > [0.0]):
+                    print("S " + str(sell(x, i+1, (srsib[i-stochrsit])*portfolio[i,1])[1]) + " F " + str(sell(x, i+1, (srsib[i-stochrsit])*portfolio[i,1])[0]) + " AT " + str(x[i+1]) + " V " + str(portfoliogain(1, i, portfolio, x)))
                 portfolio[i+1,0] = portfolio[i,0] + sell(x, i+1, srsib[i-stochrsit]*portfolio[i, 1])[0]
                 portfolio[i+1,1] = portfolio[i,1] + sell(x, i+1, srsib[i-stochrsit]*portfolio[i, 1])[1]
                 with open(name+".txt", "a") as myfile:
                     myfile.write("S("+str(i)+") : " + str(portfolio[i, 0]) + ", " + str(portfolio[i, 1]) + " -> " + str(portfolio[i+1,0]) + ", " + str(portfolio[i+1,1]) + "*" + str(x[i+1])+ "\n")
+                buya[i] = buya[i-1]
             else:
                 portfolio[i+1, 0] = portfolio[i, 0]
                 portfolio[i+1, 1] = portfolio[i, 1]
+                buya[i] = buya[i-1]
                 with open(name+".txt", "a") as myfile:
                     myfile.write("K("+str(i)+") : " + str(portfolio[i, 0]) + ", " + str(portfolio[i, 1])+ " -> " + str(portfolio[i+1,0]) + ", " + str(portfolio[i+1,1])+"*"+str(x[i+1])+"\n")
         else:
@@ -243,63 +252,69 @@ def method1(stochrsit, t, x, portfolio, srsib, srsi, dt, C, expava, arava, name,
         portfolio[len(srsi)+stochrsit,2]=x[len(srsi)+stochrsit]
     return portfolio
 
-def game(x, N, dt, delta, t, portfolio, dxH, dxL):
+def game(x, N, dt, delta, t, portfolio, dxH, dxL, j):
     brownian(x[0], N, dt, delta, out=x[1:])
     xgbm = GBM(x[0], mu, sigma, x, T, N)[0]
-    plotbrownian(xgbm, dxH*0, dxL*0, dt, t, 'plotgbm', 1)
+    plotbrownian(xgbm, dxH*0, dxL*0, dt, t, 'GBMGAME'+str(j), 1)
+    portfolio[len(xgbm)-1, 2] = xgbm[len(xgbm)-1]
     for i in range(1, len(xgbm)-1):
         portfolio[i, 2] = xgbm[i]
         print(portfoliogain(1, i, portfolio, xgbm))
-        print("price " + str(xgbm[i]))
+        print("P " + str(xgbm[i]))
         command = input("?")
         portfolio[i, 2] = xgbm[i]
-        if(command=="buy"):
+        if(command=="b"):
             portfolio[i+1,0] = portfolio[i, 0] + buy(xgbm, i+1, portfolio[i,0])[0]
             portfolio[i+1,1] = portfolio[i, 1] + buy(xgbm, i+1, portfolio[i,0])[1]
-        elif(command=="sell"):
+        elif(command=="s"):
             portfolio[i+1,0] = portfolio[i,0] + sell(xgbm, i+1, (portfolio[i, 1]))[0]
             portfolio[i+1,1] = portfolio[i,1] + sell(xgbm, i+1, (portfolio[i, 1]))[1]
         else:
             portfolio[i+1, 0] = portfolio[i, 0]
             portfolio[i+1, 1] = portfolio[i, 1]
 
-def run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, alpha, beta, C, sl, sg):
+    plotportfoliog(1, portfolio, len(portfolio), 'PFGAME'+str(j), x)
+
+
+def run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, alpha, beta, C, sl, cd):
     k = 0
     brownian(x[0], N, dt, delta, out=x[1:])
     '''brownian(dxL[0], N, dt, delta2, out=dxL[1:])
     brownian(dxH[0], N, dt, delta2, out=dxH[1:])'''
-    plotbrownian(x, dxH*0, dxL*0, dt, t, 'plotb'+str(i), 0)
+    plotbrownian(x, dxH*0, dxL*0, dt, t, 'B'+str(i), 0)
     xgbm = GBM(x[0], mu, sigma, x, T, N)[0]
-    plotbrownian(xgbm, dxH*0, dxL*0, dt, t, 'plotgbm'+str(i), 1)
+    plotbrownian(xgbm, dxH*0, dxL*0, dt, t, 'GBM'+str(i), 1)
     srsi = stochrsiarray(x, t, stochrsit)
     srsib = stochrsib(srsi, alpha, beta)
     srsig = stochrsiarray(xgbm, t, stochrsit)
     srsigb = stochrsib(srsi, alpha, beta)
     expava = EMA(0.1, x[0], x)
     expavag = EMA(0.1, xgbm[1], xgbm)
-    """plotkav(t, expavag, 'plotexpavgb'+str(i), 0)
-    plotkav(t, expava, 'plotexpavb'+str(i), 0)"""
+    """plotkav(t, expavag, 'EXPAVGB'+str(i), 0)
+    plotkav(t, expava, 'EXPAVB'+str(i), 0)"""
     arava = SMA(x, 10, dt)
-    """plotkav(arava[0], arava[1], 'plotaravab'+str(i), 1)"""
+    """plotkav(arava[0], arava[1], 'ARAVAB'+str(i), 1)"""
     aravag = SMA(xgbm, 10, dt)
-    """plotkav(aravag[0], aravag[1], 'plotaravabg'+str(i), 1)
-    plotsrsifiltered(t, srsigb, stochrsit, 'plotsrsigfiltered'+str(i))
+    """plotkav(aravag[0], aravag[1], 'ARAVAGB'+str(i), 1)
+    plotsrsifiltered(t, srsigb, stochrsit, 'SRSIGF'+str(i))
     plotsrsi(t, srsig, stochrsit, 'plotsrsig'+str(i))
-    plotsrsifiltered(t, srsib, stochrsit, 'plotsrsifiltered'+str(i))
+    plotsrsifiltered(t, srsib, stochrsit, 'SRSIF'+str(i))
     plotsrsi(t, srsi, stochrsit, 'plotsrsi'+str(i))"""
-    portfolio = method1(stochrsit, t, x, portfolio, srsib, srsi, dt, 1.1, expava, 0, "run"+str(i), sl, sg)
+    print("RUNBM"+str(i))
+    portfolio = method1(stochrsit, t, x, portfolio, srsib, srsi, dt, 1.1, expava, 0, "run"+str(i), sl, cd)
     """if(portfoliogain(1, len(srsi)+stochrsit, portfolio, x)>portfolio[stochrsit,0]):
         k += 1"""
-    plotportfoliog(1, portfolio, len(srsi), 'plotportfolio0bEQ'+str(i), x)
-    """plotportfoliog(0, portfolio, len(srsi), 'plotportfolio1bEQ'+str(i), x)"""
-    portfolio2 = method1(stochrsit, t, xgbm, portfolio, srsigb, srsig, dt, 1.1, expavag, 0, "rung"+str(i), sl, sg)
+    plotportfoliog(1, portfolio, len(srsi), 'PF0BMEQ'+str(i), x)
+    """plotportfoliog(0, portfolio, len(srsi), 'PF1BMEQ'+str(i), x)"""
+    print("RUNGBM"+str(i))
+    portfolio2 = method1(stochrsit, t, xgbm, portfolio, srsigb, srsig, dt, 1.1, expavag, 0, "rung"+str(i), sl, cd)
     """if(portfoliogain(1, len(srsi)+stochrsit, portfolio2, x)>portfolio2[stochrsit,0]):
         k += 1"""
-    """plotportfoliog(0, portfolio2, len(srsi), 'plotportfolio1gbEQ'+str(i), x)"""
-    plotportfoliog(1, portfolio2, len(srsi), 'plotportfolio0gbEQ'+str(i), x)
-    """plotportfoliog(2, portfolio, len(srsi), 'plotportfolio0b'+str(i),x)
-    plotportfoliog(2, portfolio2, len(srsi), 'plotportfolio0gb'+str(i), x)"""
+    """plotportfoliog(0, portfolio2, len(srsi), 'PF1GBMEQ'+str(i), x)"""
+    plotportfoliog(1, portfolio2, len(srsi), 'PF0GBMEQ'+str(i), x)
+    """plotportfoliog(2, portfolio, len(srsi), 'PF0BM'+str(i),x)
+    plotportfoliog(2, portfolio2, len(srsi), 'PF0GBM'+str(i), x)"""
 
-for i in range(0, 3):
-    run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, alpha, beta, C, 1.001, 1.005)
-"""game(x, N, dt, delta, t, portfolio, dxH, dxL)"""
+for i in range(0, 1):
+    run(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, alpha, beta, C, 1.005, 0.95)
+    """game(x, N, dt, delta, t, portfolio, dxH, dxL, i)"""
