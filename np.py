@@ -5,6 +5,7 @@ from math import sqrt
 from math import floor
 from matplotlib.finance import candlestick_ohlc
 import csv
+import pandas as pd
 
 plt.rc('text', usetex=True)
 
@@ -92,8 +93,6 @@ def stochrsi(x, i, stochrsit):
 #srsi:  numpy array of the values calculated by stochrsi()
 #alpha: treshold for the buying point
 #beta:  treshold for the selling point, |0.5-c|=alpha, -|0.5-c|=beta
-alpha = 0.4
-beta = 0.6
 
 def stochrsib(srsi, alpha, beta):
     for i in range(0, len(srsi)):
@@ -157,7 +156,7 @@ def plotkav(t, k, name, i):
     elif i == 2:
         plt.title(r"SA$(B(t)) =  \frac{1}{t}\mathrm{SA}(B(t-\Delta t))*(t-\Delta)+B(t))$",
         fontsize=16, color='black')
-    plt.savefig(name+'.png')
+    plt.savefig('PLOT/'+name+'.png')
 
 def plotsrsi(t, srsi, stochrsit, name):
     fig, ax = plt.subplots()
@@ -165,7 +164,7 @@ def plotsrsi(t, srsi, stochrsit, name):
     plt.title(r"StochRSI$(t, \tau)$")
     srsi = np.delete([tuple([stochrsi(x, i, stochrsit)]) for i in range(stochrsit,len(t)+1)], 1, axis=0)
     plt.plot(np.arange(stochrsit*dt, T, dt), srsi)
-    plt.savefig(name+'.png')
+    plt.savefig('PLOT/'+name+'.png')
 
 def plotportfoliog(i, portfolio, lsrsi, name, x, stochrsit):
     fig, ax = plt.subplots()
@@ -177,7 +176,7 @@ def plotportfoliog(i, portfolio, lsrsi, name, x, stochrsit):
         plt.title(r'Portfolio(t, '+str(i-2)+')')
     p = np.delete([tuple([portfoliogain(i, j, portfolio, x)]) for j in range(((portfolio.shape[0])))], 1, axis=0)
     plt.plot(range(portfolio.shape[0]-1), p)
-    plt.savefig(name+'.png')
+    plt.savefig('PLOT/'+name+'.png')
 
 def portfoliogain(i, j, portfolio, x):
     if i == 1:
@@ -192,7 +191,7 @@ def plotsrsifiltered(t, srsifiltered, stochrsit, name):
     plt.plot(np.arange(stochrsit*dt, T, dt), srsifiltered)
     plt.xlabel(r'\textbf{time} ($t = k\Delta t$)')
     plt.title(r'FilteredStochRSI($\alpha$,$\beta$,$t$,$\tau$)')
-    plt.savefig(name+'.png')
+    plt.savefig('PLOT/'+name+'.png')
 
 def plotbrownian(x, dxH, dxL, dt, t, name, b):
     dxL = -abs(dxL)
@@ -219,7 +218,8 @@ def plotbrownian(x, dxH, dxL, dt, t, name, b):
         plt.title(r'$B(t, \delta)$')
     else:
         plt.title(r'STOCK PRICE')
-    plt.savefig(name + '.png')
+        plt.xlabel(r'\textbf{time} ($k = \frac{t}{\Delta t}$)')
+    plt.savefig('PLOT/' + name + '.png')
 
 def stochrsiarray(x, t, stochrsit):
     return np.delete([tuple([stochrsi(x, i, stochrsit)]) for i in range(stochrsit,len(t)+1)], 1, axis=0)
@@ -239,7 +239,7 @@ def method1(stochrsit, t, x, portfolio, srsib, srsi, dt, C, expava, arava, name,
         if portfoliogain(1, i, portfolio, x) < C*portfolio[0, 0]:
             if c1(portfolio, srsib, expava, sl, cd, i, 0, stochrsit, x):
                 if(buy(x, i+1, (1-srsib[i-stochrsit])*portfolio[i,0])[1] > [0.0]):
-                    print("B " + str(buy(x, i+1, (1-srsib[i-stochrsit])*portfolio[i,0])[1]) + " F " + str(buy(x, i+1, (1-srsib[i-stochrsit])*portfolio[i,0])[0]) + " AT " + str(x[i+1]))
+                    '''print("B " + str(buy(x, i+1, (1-srsib[i-stochrsit])*portfolio[i,0])[1]) + " F " + str(buy(x, i+1, (1-srsib[i-stochrsit])*portfolio[i,0])[0]) + " AT " + str(x[i+1]))'''
                 portfolio[i+1,0] = portfolio[i, 0] + buy(x, i+1, (1-srsib[i-stochrsit])*portfolio[i,0])[0]
                 portfolio[i+1,1] = portfolio[i, 1] + buy(x, i+1, (1-srsib[i-stochrsit])*portfolio[i,0])[1]
                 buya[i] = x[i]
@@ -247,7 +247,7 @@ def method1(stochrsit, t, x, portfolio, srsib, srsi, dt, C, expava, arava, name,
                     myfile.write("B("+str(i)+") : " + str(portfolio[i,0]) + ", " + str(portfolio[i,1]) + " -> " + str(portfolio[i+1,0])+", "+str(portfolio[i+1,1]) + "*" + str(x[i+1]) + "\n")
             elif c1(portfolio, srsib, expava, sl, cd, i, 1, stochrsit, x):
                 if(sell(x, i+1, (srsib[i-stochrsit])*portfolio[i,1])[0] > [0.0]):
-                    print("S " + str(sell(x, i+1, (srsib[i-stochrsit])*portfolio[i,1])[1]) + " F " + str(sell(x, i+1, (srsib[i-stochrsit])*portfolio[i,1])[0]) + " AT " + str(x[i+1]) + " V " + str(portfoliogain(1, i, portfolio, x)))
+                    '''print("S " + str(sell(x, i+1, (srsib[i-stochrsit])*portfolio[i,1])[1]) + " F " + str(sell(x, i+1, (srsib[i-stochrsit])*portfolio[i,1])[0]) + " AT " + str(x[i+1]) + " V " + str(portfoliogain(1, i, portfolio, x)))'''
                 portfolio[i+1,0] = portfolio[i,0] + sell(x, i+1, srsib[i-stochrsit]*portfolio[i, 1])[0]
                 portfolio[i+1,1] = portfolio[i,1] + sell(x, i+1, srsib[i-stochrsit]*portfolio[i, 1])[1]
                 with open(name+".txt", "a") as myfile:
@@ -294,7 +294,6 @@ def game(x, N, dt, delta, t, portfolio, dxH, dxL, j):
 
 def get_data_csv(filename):
     prices = []
-    row0 = 0
     with open(filename, 'r') as csvf:
         csvFR = csv.reader(csvf)
         next(csvFR)
@@ -319,7 +318,7 @@ def BestRatio(x):
         s = s/x[len(x)-1]
     return s;
 
-def runBrownian(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, alpha, beta, C, sl, cd):
+def runBrownian(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, alpha, beta, C, sl, cd, smoothCE, smoothCA):
     k = 0
     brownian(x[0], N, dt, delta, out=x[1:])
     '''brownian(dxL[0], N, dt, delta2, out=dxL[1:])
@@ -327,54 +326,97 @@ def runBrownian(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, alpha, beta,
     '''plotbrownian(x, dxH*0, dxL*0, dt, t, 'B'+str(i), 0)'''
     xgbm = GBM(x[0], mu, sigma, x, T, N)[0]
     plotbrownian(xgbm, dxH*0, dxL*0, dt, t, 'GBM'+str(i), 1)
-    srsi = stochrsiarray(x, t, stochrsit)
-    srsib = stochrsib(srsi, alpha, beta)
+    """srsi = stochrsiarray(x, t, stochrsit)
+    srsib = stochrsib(srsi, alpha, beta)"""
     srsig = stochrsiarray(xgbm, t, stochrsit)
-    srsigb = stochrsib(srsi, alpha, beta)
-    expava = EMA(0.1, x[0], x)
-    expavag = EMA(0.1, xgbm[1], xgbm)
+    srsigb = stochrsib(srsig, alpha, beta)
+    expava = EMA(smoothCE, x[0], x)
+    expavag = EMA(smoothCE, xgbm[1], xgbm)
     """plotkav(t, expavag, 'EXPAVGB'+str(i), 0)
     plotkav(t, expava, 'EXPAVB'+str(i), 0)"""
     """arava = SMA(x, 10, dt)"""
     """plotkav(arava[0], arava[1], 'ARAVAB'+str(i), 1)"""
-    aravag = SMA(xgbm, 10, dt)
+    aravag = SMA(xgbm, smoothCA, dt)
     """plotkav(aravag[0], aravag[1], 'ARAVAGB'+str(i), 1)
     plotsrsifiltered(t, srsigb, stochrsit, 'SRSIGF'+str(i))
     plotsrsi(t, srsig, stochrsit, 'plotsrsig'+str(i))
     plotsrsifiltered(t, srsib, stochrsit, 'SRSIF'+str(i))
     plotsrsi(t, srsi, stochrsit, 'plotsrsi'+str(i))"""
     """print("RUNBM"+str(i))"""
-    '''portfolio = method1(stochrsit, t, x, portfolio, srsib, srsi, dt, 1.1, expava, 0, "run"+str(i), sl, cd)'''
+    '''portfolio = method1(stochrsit, t, x, portfolio, srsib, srsi, dt, C, expava, 0, "run"+str(i), sl, cd)'''
     """if(portfoliogain(1, len(srsi)+stochrsit, portfolio, x)>portfolio[stochrsit,0]):
         k += 1"""
     '''plotportfoliog(1, portfolio, len(srsi), 'PF0BMEQ'+str(i), x, stochrsit)'''
     """plotportfoliog(0, portfolio, len(srsi), 'PF1BMEQ'+str(i), x, stochrsit)"""
     print("RUNGBM"+str(i))
-    portfolio2 = method1(stochrsit, t, xgbm, portfolio, srsigb, srsig, dt, 1.1, expavag, 0, "rung"+str(i), sl, cd)
+    portfolio2 = method1(stochrsit, t, xgbm, portfolio, srsigb, srsig, dt, C, expavag, 0, "rung"+str(i), sl, cd)
     """if(portfoliogain(1, len(srsi)+stochrsit, portfolio2, x)>portfolio2[stochrsit,0]):
         k += 1"""
     """plotportfoliog(0, portfolio2, len(srsi), 'PF1GBMEQ'+str(i), x, stochrsit)"""
-    plotportfoliog(1, portfolio2, len(srsi), 'PF0GBMEQ'+str(i), x, stochrsit)
+    plotportfoliog(1, portfolio2, len(srsig), 'PF0GBMEQ'+str(i), x, stochrsit)
     """plotportfoliog(2, portfolio, len(srsi), 'PF0BM'+str(i), x, stochrsit)
     plotportfoliog(2, portfolio2, len(srsi), 'PF0GBM'+str(i), x, stochrsit)"""
+    save_data_csv(xgbm, "xgbm"+str(i)+".csv")
 
-def runBacktest(srsit, C, sl, cd, i, data, qty, qty2):
+def runBacktest(srsit, C, sl, cd, i, data, qty, qty2, alpha, beta, smoothCE, plot):
     pdata = get_data_csv(data)
     portfolioBt = createportfolio(len(pdata), srsit, qty, qty2)
     t = np.arange(0, len(pdata)-1, 1)
     srsip = stochrsiarray(pdata, t , srsit)
     srsibp = stochrsib(srsip, alpha, beta)
-    emap = EMA(0.1, pdata[1], pdata)
+    emap = EMA(smoothCE, pdata[1], pdata)
     portfolioBt = method1(srsit,  t, pdata, portfolioBt, srsibp, srsip, 1, C, emap, 0, "run"+str(data)+str(i), sl, cd)
+    if plot==1:
+        plotbrownian(pdata, dxH*0, dxL*0, 1, t, str(data)+str(i), 2)
     plotportfoliog(1, portfolioBt, len(srsip), 'PF0'+str(data)+str(i), x, 2)
-    plotbrownian(pdata, dxH*0, dxL*0, 1, t, str(data)+str(i), 2)
 
-for i in range(0, 1):
-    runBrownian(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, alpha, beta, 1.1, 1.01, 0.95)
+
+def save_data_csv(x, filename):
+    df = pd.DataFrame(x)
+    df.to_csv(filename, header=None)
+
+def LearningCSL(srsit, cd, i, data, qty, qty2, alpha, beta, smoothCE): #averaging C & sl on brownian motions of same volatility etc, is a good strategy to approximate the min & max.
+    C = 0
+    sl = 1
+    pdata = get_data_csv(data)
+    portfolioBt = createportfolio(len(pdata), srsit, qty, qty2)
+    t = np.arange(0, len(pdata)-1, 1)
+    srsip = stochrsiarray(pdata, t , srsit)
+    srsibp = stochrsib(srsip, alpha, beta)
+    emap = EMA(smoothCE, pdata[1], pdata)
+    portfolioBt = method1(srsit,  t, pdata, portfolioBt, srsibp, srsip, 1, 100, emap, 0, "run"+str(data)+str(i), 0, cd) #C=100,sl=0, it wont reach it.
+    d = portfoliogain(1, stochrsit, portfolioBt, data)
+    for i in range(srsit, len(portfolioBt)):
+        r = portfoliogain(1, i, portfolioBt, data)/d
+        if r>C:
+            C = r
+        if r<sl:
+            sl = r
+    return C,sl
+
+n = 10
+
+for i in range(0, n):
+    runBrownian(x, N, dt, delta, dxL, delta2, dxH, t, i, portfolio, 0.4, 0.6, 1.1, 1.01, 0.95, 0.1, 10)
     """game(x, N, dt, delta, t, portfolio, dxH, dxL, i)"""
 
-runBacktest(2, 1.01, 1.005, 0.95, i, "GOOG.csv", 1, 0)
-runBacktest(5, 1.01, 1.005, 0.95, i, "AAPL.csv", 1, 0)
-runBacktest(10, 1.32, 1.05, 0.99, i, "FB.csv", 1, 0)
-runBacktest(10, 1.5, 1.005, 0.99, i, "GOOG2.csv", 1, 0)
-runBacktest(10, 1.2, 1.05, 0.999, i, "CDI.PA.csv", 1, 0)
+"""runBacktest(2, 1.01, 1.005, 0.95, 0, "GOOG.csv", 1, 0, 0.4, 0.6)
+runBacktest(5, 1.01, 1.005, 0.95, 0, "AAPL.csv", 1, 0, 0.4, 0.6)
+runBacktest(10, 1.32, 1.05, 0.99, 0, "FB.csv", 1, 0, 0.4, 0.6)
+runBacktest(10, 1.5, 1.005, 0.99, 0, "GOOG2.csv", 1, 0, 0.4, 0.6)
+runBacktest(10, 1.2, 1.05, 0.999, 0, "CDI.PA.csv", 1, 0, 0.4, 0.6)
+runBacktest(2, 1.01, 1.005, 0.95, 0, "xgbm0.csv", 1, 0, 0.4, 0.6)"""
+C = 0
+sl = 0
+Csl = []
+
+for i in range(0, n):
+    Csl = LearningCSL(20, 1.05, 0, "xgbm"+str(i)+".csv", 1, 0, 0.4, 0.6, 0.1)
+    C += Csl[0]
+    sl += Csl[1]
+C = C/n
+sl = sl/n #averaging CSL on brownian motions
+epsilon = 0.001
+
+for i in range(0, n):
+    runBacktest(20, C-epsilon, 1.05, sl+epsilon, 0, "xgbm"+str(i)+".csv", 1, 0, 0.4, 0.6, 0.1, 0)
