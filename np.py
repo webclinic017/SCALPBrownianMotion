@@ -97,12 +97,16 @@ beta = 0.6
 
 def stochrsib(srsi, alpha, beta):
     for i in range(0, len(srsi)):
-        if(srsi[i]<alpha): #treshold
-            srsifiltered[i] = 0
-        elif(srsi[i]>=beta): #treshold
-            srsifiltered[i] = 1
-        else:
-            srsifiltered[i]=srsi[i]
+        try:
+            if(srsi[i]<alpha): #treshold
+                srsifiltered[i] = 0
+            elif(srsi[i]>=beta): #treshold
+                srsifiltered[i] = 1
+            else:
+                srsifiltered[i]=srsi[i]
+        except IndexError:
+            print("EH")
+            pass
     return srsifiltered
 
 #Parameters EMA()
@@ -115,7 +119,11 @@ expava = np.empty((N+1))
 def EMA(alpha, x0, x):
     expava[0] = x0
     for i in range(1,len(x)):
-        expava[i] = alpha*x[i] + (1-alpha)*expava[i-1]
+        try:
+            expava[i] = alpha*x[i] + (1-alpha)*expava[i-1]
+        except IndexError:
+            pass
+        continue
     return np.delete(expava, 1, axis = 0)
 
 #Parameters SMA()
@@ -189,14 +197,19 @@ def plotsrsifiltered(t, srsifiltered, stochrsit, name):
 def plotbrownian(x, dxH, dxL, dt, t, name, b):
     dxL = -abs(dxL)
     dxH = abs(dxH)
+    quotes = []
     for i in range(len(x)):
-        dxL[i] *= (x[i]-x[i-1])/x[i]
-        dxH[i] *= (x[i]-x[i-1])/x[i]
-    quotes = [tuple([t[i],
-                     x[i],
-                     x[i+1]+dxH[i+1],
-                     x[i+1]+dxL[i+1],
-                     x[i+1]]) for i in range(b,len(x)-1)]
+        try:
+            dxL[i] *= (x[i]-x[i-1])/x[i]
+            dxH[i] *= (x[i]-x[i-1])/x[i]
+            quotes = [tuple([t[i],
+                        x[i],
+                        x[i+1]+dxH[i+1],
+                        x[i+1]+dxL[i+1],
+                        x[i+1]]) for i in range(b,len(x)-1)]
+        except IndexError:
+            pass
+        continue
     fig, ax = plt.subplots()
     plt.xlabel(r'\textbf{time} ($t = k\Delta t$)')
     candlestick_ohlc(ax, quotes, width=dt, colorup='g', colordown='r', alpha=1.0)
@@ -281,11 +294,15 @@ def game(x, N, dt, delta, t, portfolio, dxH, dxL, j):
 
 def get_data_csv(filename):
     prices = []
+    row0 = 0
     with open(filename, 'r') as csvf:
         csvFR = csv.reader(csvf)
         next(csvFR)
         for row in csvFR:
-            prices.append(float(row[1]))
+            try:
+                prices.append(float(row[1]))
+            except ValueError:
+                pass
     return prices
 
 def BestRatio(x):
@@ -357,5 +374,7 @@ for i in range(0, 1):
     """game(x, N, dt, delta, t, portfolio, dxH, dxL, i)"""
 
 runBacktest(2, 1.01, 1.005, 0.95, i, "GOOG.csv", 1, 0)
-runBacktest(2, 1.01, 1.005, 0.95, i, "AAPL.csv", 1, 0)
+runBacktest(5, 1.01, 1.005, 0.95, i, "AAPL.csv", 1, 0)
 runBacktest(10, 1.32, 1.05, 0.99, i, "FB.csv", 1, 0)
+runBacktest(10, 1.5, 1.005, 0.99, i, "GOOG2.csv", 1, 0)
+runBacktest(10, 1.2, 1.05, 0.999, i, "CDI.PA.csv", 1, 0)
