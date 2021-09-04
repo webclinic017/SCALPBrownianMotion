@@ -127,8 +127,8 @@ def EMA(alpha, x0, x):
 
 #Parameters SMA()
 #
-#n          SMA() will calculate the arithmetic average on the last n values of x (for i in range(len(x)))
-#x:         set of datas
+#n          SMA() return the arithmetic average on the last n values of x 
+#x:         data set
 
 def SMA(x, n, dt):
     arava = np.empty((N-n))
